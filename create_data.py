@@ -14,7 +14,7 @@ if __name__=='__main__':
 
     # NOTE: You you can change/add the parameters of the streaking
     #       Be careful though since the simulation time will scale fast
-    binding_energies_ls = [[6.7, 65]] # Mehrere Atome mit 2 Energie Niveas hinzufügenm
+    binding_energies_ls = [[6.7, 65]] # Mehrere Atome mit 2 Energie Niveas hinzufügen
     time_delays_ls      = [[0, 48e-18]] 
     amplitudes_ls       = [[1, 0.9]] 
     spectral_widths_ls  = [[3.87, 3.87]]
