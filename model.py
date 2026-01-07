@@ -26,6 +26,56 @@ class TrainingsDataset(Dataset):
 # inspired by: Attosecond Streaking Phase Retrieval Via Deep Learning Methods (page 7, CNN)
 class Model(nn.Module):
     def __init__(self,start_layer, *args, **kwargs):
-        
+        super().__init__()
+
+        # Allgemein
+        self.relu=nn.ReLU()
+        self.dropout = nn.Dropout(p=0.5)
+        self.lin = nn.Linear("Hier Dimension von output_flat einfügen","Output Size überlegen")
+
+        # Block 1
+        # HINWEIS: Generierte Daten: 30 Spektrogramme, 800 E_kin, 40 \tau
+        self.conv1 = nn.Conv2d(1,20,(21,8))
+        self.maxpool1 = nn.MaxPool2d((13,5),stride=3)
+
+        # Block 2
+        self.conv2 = nn.Conv2d(20,40,(13,5))
+        self.maxpool2 = nn.MaxPool2d((9,3),stride=2)
+
+        # Block 3
+        self.conv3 = nn.Conv2d(40,40,(3,2))  # Kern eigentlich 3, hier auf 2 wegen mangelder Breite der Daten
+        self.maxpool3 = nn.MaxPool2d((2,2),stride=2)
+
+        # Final
+        self.lin2 = nn.Linear("siehe Unten",4)
+
         # Stand 20260107: start_layer=800*40*30=960000=9.6*1e5
+
+    def forward(self,x):
+        # Reshape
+        x.view(-1,1,800,40)
+
+        # Block 1
+        input_max1 = self.relu(self.conv1(x))
+        output1 = self.maxpool1(input_max1)
+
+        # Block 2
+        input_max2 = self.relu(self.conv2(output1))
+        output2 = self.maxpool2(input_max2)
+
+        # Block 3
+        input_max3 = self.relu(self.conv3(output2))
+        output3 = self.maxpool3(input_max3)
     
+        # flatten
+        output_flat=torch.flatten(output3,start_dim=1) # Dimension Error, da zuwenig \tau (Width) Werte. Vor Anwendung Daten/Kernels anpassen.
+
+        # Linear
+        input_lin = self.lin(output_flat)
+        output_lin = self.relu(input_lin)
+
+        # Dropout
+        output_drop = self.dropout(output_lin)
+
+        # final predict
+        return self.lin2(output_drop)
