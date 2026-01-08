@@ -20,12 +20,15 @@ class TrainingsDataset(Dataset):
 
     def __len__(self): return len(self.x)
     def __getitem__(self, index): return self.x[index],self.y[index]
+# Datenformat anpassen damit es mit Modell übereinstimmt.
+
+
 
 # Model 
 
 # inspired by: Attosecond Streaking Phase Retrieval Via Deep Learning Methods (page 7, CNN)
 class Model(nn.Module):
-    def __init__(self,start_layer, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__()
 
         # Allgemein
@@ -79,3 +82,46 @@ class Model(nn.Module):
 
         # final predict
         return self.lin2(output_drop)
+    
+# Daten importieren
+
+# bis Dato nur Blaupause aus Test Projekt
+    batchsize=20
+    data = TrainingsDataset("data/training_data.npz")
+    dataloader = DataLoader(data,batch_size=batchsize,shuffle=True)
+    x,y=next(iter(dataloader))
+
+# Netztrainieren
+
+    model = Model()
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.SGD(model.parameters(),lr=1e-3)
+
+    N = int(1e3)
+
+    number_batches = data.__len__()//batchsize+1
+    print(f"Number of Batches: {number_batches}")
+
+    best_loss = 10000000000
+    for epoch in range(N):
+        if epoch%100==0:
+            printer=True
+        else:
+            printer=False
+        loss_tracker = np.zeros(number_batches)
+        i = -1
+        for x_batch,y_batch in dataloader:
+            i += 1
+            y_predcit = model.forward(x_batch)
+            loss = criterion(y_predcit,y_batch)
+            loss_tracker[i]=loss.item()
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        loss_mean = loss_tracker.mean()
+        if loss_mean < best_loss:
+            best_loss = loss_mean
+            torch.save(model.state_dict(),"model.pth")
+            print(f"Neuer Bestwert: {best_loss} - Gespeichert in Epoche: {epoch}")
+        if printer==True:
+            print(loss_mean)
