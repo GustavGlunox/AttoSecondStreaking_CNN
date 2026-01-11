@@ -34,7 +34,7 @@ class Model(nn.Module):
         # Allgemein
         self.relu=nn.ReLU()
         self.dropout = nn.Dropout(p=0.5)
-        self.lin = nn.Linear("Hier Dimension von output_flat einfügen","Output Size überlegen")
+        self.lin = nn.Linear(2320,200) # ersteres via dimension.py berechnet, zweites frei gewählt
 
         # Block 1
         # HINWEIS: Generierte Daten: 30 Spektrogramme, 800 E_kin, 40 \tau
@@ -47,12 +47,12 @@ class Model(nn.Module):
 
         # Block 3
         self.conv3 = nn.Conv2d(40,40,(3,2))  # Kern eigentlich 3, hier auf 2 wegen mangelder Breite der Daten
-        self.maxpool3 = nn.MaxPool2d((2,2),stride=2)
+        self.maxpool3 = nn.MaxPool2d((2,1),stride=2) # Kernel eigentlich (2,2) wegen Dimensionsproblem 1
 
         # Final
-        self.lin2 = nn.Linear("siehe Unten",4)
+        self.lin2 = nn.Linear(200,8)
 
-        # Stand 20260107: start_layer=800*40*30=960000=9.6*1e5
+        # Stand 20260107: start_layer=800x40x30=960000=9.6*1e5
 
     def forward(self,x):
         # Reshape
@@ -86,42 +86,42 @@ class Model(nn.Module):
 # Daten importieren
 
 # bis Dato nur Blaupause aus Test Projekt
-    batchsize=20
-    data = TrainingsDataset("data/training_data.npz")
-    dataloader = DataLoader(data,batch_size=batchsize,shuffle=True)
-    x,y=next(iter(dataloader))
+batchsize=20
+data = TrainingsDataset("data/training_data.npz")
+dataloader = DataLoader(data,batch_size=batchsize,shuffle=True)
+x,y=next(iter(dataloader))
 
 # Netztrainieren
 
-    model = Model()
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(),lr=1e-3)
+model = Model()
+criterion = nn.MSELoss()
+optimizer = torch.optim.SGD(model.parameters(),lr=1e-3)
 
-    N = int(1e3)
+N = int(1e3)
 
-    number_batches = data.__len__()//batchsize+1
-    print(f"Number of Batches: {number_batches}")
+number_batches = data.__len__()//batchsize+1
+print(f"Number of Batches: {number_batches}")
 
-    best_loss = 10000000000
-    for epoch in range(N):
-        if epoch%100==0:
-            printer=True
-        else:
-            printer=False
-        loss_tracker = np.zeros(number_batches)
-        i = -1
-        for x_batch,y_batch in dataloader:
-            i += 1
-            y_predcit = model.forward(x_batch)
-            loss = criterion(y_predcit,y_batch)
-            loss_tracker[i]=loss.item()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        loss_mean = loss_tracker.mean()
-        if loss_mean < best_loss:
-            best_loss = loss_mean
-            torch.save(model.state_dict(),"model.pth")
-            print(f"Neuer Bestwert: {best_loss} - Gespeichert in Epoche: {epoch}")
-        if printer==True:
-            print(loss_mean)
+best_loss = 10000000000
+for epoch in range(N):
+    if epoch%100==0:
+        printer=True
+    else:
+        printer=False
+    loss_tracker = np.zeros(number_batches)
+    i = -1
+    for x_batch,y_batch in dataloader:
+        i += 1
+        y_predcit = model.forward(x_batch)
+        loss = criterion(y_predcit,y_batch)
+        loss_tracker[i]=loss.item()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+    loss_mean = loss_tracker.mean()
+    if loss_mean < best_loss:
+        best_loss = loss_mean
+        torch.save(model.state_dict(),"model.pth")
+        print(f"Neuer Bestwert: {best_loss} - Gespeichert in Epoche: {epoch}")
+    if printer==True:
+        print(loss_mean)
